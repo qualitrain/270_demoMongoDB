@@ -5,9 +5,9 @@ import qtx.entidades.Persona;
 import qtx.entidades.Venta;
 import qtx.persistencia.ManejadorMongoDB;
 
-public class TestTransacciones {
+public class TestVentas {
 
-	public static void testTransaccionNuevaVenta() {
+	public static int testInsertarNuevaVenta() {
 		Persona unVendedor = ManejadorMongoDB.getPersonaXID(1);
 		Persona unCliente = ManejadorMongoDB.getPersonaXID(2);
 		System.out.println("vendedor:" + unVendedor);
@@ -29,19 +29,25 @@ public class TestTransacciones {
 		Articulo articulo5 = ManejadorMongoDB.getArticuloXID("DR-56");
 		nuevaVenta.agregarDetalle(5, 4, articulo5,articulo5.getPrecioLista());
 		
-//		int numVenta = ManejadorMongoDB.insertarVentaTransaccional(nuevaVenta);
-		int numVenta = ManejadorMongoDB.insertarVentaNoTransaccional(nuevaVenta);
+		int numVenta = ManejadorMongoDB.insertarVenta(nuevaVenta);
 		System.out.println("Venta insertada con numVenta = " + numVenta);
 		Venta ventaInsertada = ManejadorMongoDB.getVentaXID(numVenta);
 		ventaInsertada.mostrar();
+		return numVenta;
 	}
-	public static void testGetVentaXID() {
-		Venta venta = ManejadorMongoDB.getVentaXID(1);
+	
+	public static void testGetVentaXID(int numVta) {
+		Venta venta = ManejadorMongoDB.getVentaXID(numVta);
 		venta.mostrar();
 	}
+	
 	public static void main(String[] args) {
-//		testTransaccionNuevaVenta();
-		testGetVentaXID();
+		ManejadorMongoDB.abrirPoolConexiones();
+		
+		int numVta = testInsertarNuevaVenta();
+		testGetVentaXID(numVta);
+		
+		ManejadorMongoDB.cerrarConexiones();
 	}
 
 }

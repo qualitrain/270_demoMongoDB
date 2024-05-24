@@ -13,9 +13,13 @@ import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
+import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoException;
 import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
+import com.mongodb.ServerAddress;
+import com.mongodb.ServerApi;
+import com.mongodb.ServerApiVersion;
 import com.mongodb.TransactionOptions;
 import com.mongodb.WriteConcern;
 import com.mongodb.client.ClientSession;
@@ -34,16 +38,56 @@ import qtx.entidades.Articulo;
 import qtx.entidades.DetalleVenta;
 import qtx.entidades.Persona;
 import qtx.entidades.Venta;
-
-public class ManejadorMongoDB { 
-	private static final String CAD_CONEXION_MONGO4_2 = 
-			"mongodb://localhost:27017" ;
+/**
+ * Para 
+ * Mongo 6+
+ * mongodb-driver-sync 5.1+
+ * Java 17+
+ */
+public class ManejadorMongoDB {
+	/*   Para mongo 4 y mongodb-driver-sync 3.11
+	 * 
+		private static final String CAD_CONEXION_MONGO4_2 = "mongodb://localhost:27017" ;
+		private static MongoClient poolConexionesMongo = MongoClients.create(CAD_CONEXION_MONGO4_2);
+		
+	*/
+	
 	private static final String BASE_DATOS = "ejemMongoDB";
-	private static MongoClient poolConexionesMongo = MongoClients.create(CAD_CONEXION_MONGO4_2);
 
+	private static final String SERVIDOR01 = "localhost";
+	private static final int puerto01 = 27017;
+	
+	public static  MongoClient getMongoCliente_Driver_sync_5() {
+		
+		List<ServerAddress> lstServidoresMongo = List.of(new ServerAddress(SERVIDOR01, puerto01));
+		
+	    MongoClientSettings settings = MongoClientSettings.builder()
+	               .applyToClusterSettings(builder -> builder.hosts(lstServidoresMongo))
+	               .serverApi(ServerApi.builder()
+	                   .version(ServerApiVersion.V1)
+	                   .build())
+	               .build();
+
+	    MongoClient mongoClient = MongoClients.create(settings);
+	    return mongoClient;
+	}
+	
+	private static MongoClient poolConexionesMongo = null;
+
+	public static void abrirPoolConexiones() {
+		ManejadorMongoDB.poolConexionesMongo = getMongoCliente_Driver_sync_5();
+	}
+	
 	public static  MongoDatabase conectarBD() {
 		return poolConexionesMongo.getDatabase(BASE_DATOS);
 	}
+	
+	public static void cerrarConexiones() {
+		if(ManejadorMongoDB.poolConexionesMongo != null) {
+			ManejadorMongoDB.poolConexionesMongo.close();
+		}
+	}
+	
 	public static List<String> getClavesArticulo() {
 		List<String> clavesArticulo = new ArrayList<String>();
 		MongoDatabase conexionBD = ManejadorMongoDB.conectarBD();
@@ -55,6 +99,7 @@ public class ManejadorMongoDB {
 
 		return clavesArticulo;
 	}
+	
 	public static List<Articulo> getArticulos() {
 		List<Articulo> articulos = new ArrayList<Articulo>();
 		MongoDatabase conexionBD = ManejadorMongoDB.conectarBD();
@@ -64,6 +109,7 @@ public class ManejadorMongoDB {
 		             .forEach((Document art) -> agregarArticulo(art,articulos));
 		return articulos;
 	}
+	
 	public static List<Articulo> getArticulosMasCarosQue(float importe) {
 		List<Articulo> articulos = new ArrayList<Articulo>();
 		MongoDatabase conexionBD = ManejadorMongoDB.conectarBD();
@@ -73,6 +119,7 @@ public class ManejadorMongoDB {
 		             .forEach((Document art) -> agregarArticulo(art,articulos));
 		return articulos;
 	}
+	
 	private static void agregarArticulo(Document docArticulo, List<Articulo> articulos) {
 		Articulo articulo;
 		articulo = new Articulo();
@@ -82,6 +129,7 @@ public class ManejadorMongoDB {
 		articulo.setPrecioLista((float)( docArticulo.getDouble("precio_lista") * 1) );
 		articulos.add(articulo);
 	}
+	
 	public static Articulo getArticuloXID(String cveArticulo) {
 		Articulo articulo = null;
 		MongoDatabase conexionBD = ManejadorMongoDB.conectarBD();
@@ -99,6 +147,7 @@ public class ManejadorMongoDB {
 		}
 		return articulo;
 	}
+	
 	public static int insertarArticulo(Articulo articulo) {
 		Document docArticulo = new Document();
 		docArticulo.append("cve_articulo", articulo.getCveArticulo())
@@ -115,6 +164,7 @@ public class ManejadorMongoDB {
 		}
 		return 1;
 	}
+	
 	public static int modificarArticulo(Articulo articulo) {
 		MongoDatabase conexionBD = ManejadorMongoDB.conectarBD();
 		MongoCollection<Document> collArticulos = conexionBD.getCollection("articulo");
@@ -133,6 +183,7 @@ public class ManejadorMongoDB {
 			return 0;
 		}
 	}
+	
 	public static int remplazarArticulo(Articulo articulo) {
 		Document docArticulo = new Document();
 		docArticulo.append("cve_articulo", articulo.getCveArticulo())
@@ -152,6 +203,7 @@ public class ManejadorMongoDB {
 			return 0;
 		}
 	}
+	
 	public static int eliminarArticulo(String cveArticulo) {
 		MongoDatabase conexionBD = ManejadorMongoDB.conectarBD();
 		MongoCollection<Document> collArticulos = conexionBD.getCollection("articulo");
@@ -165,6 +217,7 @@ public class ManejadorMongoDB {
 			return 0;
 		}
 	}
+	
 	public static Persona getPersonaXID(int idPersona) {
 		Persona persona = null;
 		MongoDatabase conexionBD = ManejadorMongoDB.conectarBD();
@@ -180,6 +233,7 @@ public class ManejadorMongoDB {
 		}
 		return persona;
 	}
+	
 	public static Persona getPersonaXObjectID(ObjectId _id) {
 		Persona persona = null;
 		MongoDatabase conexionBD = ManejadorMongoDB.conectarBD();
@@ -196,6 +250,7 @@ public class ManejadorMongoDB {
 		}
 		return persona;
 	}
+	
 	public static Venta getVentaXID(int numVenta) {
 		Venta venta = null;
 		MongoDatabase conexionBD = ManejadorMongoDB.conectarBD();
@@ -224,15 +279,16 @@ public class ManejadorMongoDB {
 		}
 		return venta;
 	}
+	
 	public static int insertarVentaTransaccional(Venta nuevaVenta) {
 		// REQUIERE UN REPLICA SET PARA FUNCIONAR
 
 		AtomicInteger numVta = new AtomicInteger();
-		/* Paso 1: Iniciar una sesión cliente. */
+		/* Paso 1: Iniciar una sesiï¿½n cliente. */
 
 		ClientSession clientSession = poolConexionesMongo.startSession();
 
-		/* Paso 2: Opcional. Configurar opciones de la transacción. */
+		/* Paso 2: Opcional. Configurar opciones de la transacciï¿½n. */
 
 		TransactionOptions txnOptions = 
 				          TransactionOptions.builder()
@@ -241,7 +297,7 @@ public class ManejadorMongoDB {
 									        .writeConcern(WriteConcern.MAJORITY)
 									        .build();
 		
-		/* Paso 3: Definir operaciones que forman la transacción. */
+		/* Paso 3: Definir operaciones que forman la transacciï¿½n. */
 
 		TransactionBody<String> transaccion = 
 				() -> { 
@@ -296,6 +352,7 @@ public class ManejadorMongoDB {
 			return 0;		
 		}
 	}
+	
 	private static Document generarDocumentVenta(Venta vta, ObjectId cteObjId, ObjectId vendedorObjId, int numVtaNext) {
 		Document docVenta = new Document();
 		docVenta.append("num_venta", numVtaNext)
@@ -325,6 +382,7 @@ public class ManejadorMongoDB {
 		docVenta.append("detalles", arrBsonDetalles);
 		return docVenta;
 	}
+	
 	public static int actualizarSaldoCliente(Persona cliente, double importe) {
 		MongoDatabase conexionBD = ManejadorMongoDB.conectarBD();
 		MongoCollection<Document> collClientes = conexionBD.getCollection("persona");
@@ -340,7 +398,8 @@ public class ManejadorMongoDB {
 			return 0;
 		}
 	}
-	public static int insertarVentaNoTransaccional(Venta nuevaVenta) {
+	
+	public static int insertarVenta(Venta nuevaVenta) {
 
 		MongoDatabase conexionBD = ManejadorMongoDB.conectarBD();
 		MongoCollection<Document> collVentas = conexionBD.getCollection("venta");
