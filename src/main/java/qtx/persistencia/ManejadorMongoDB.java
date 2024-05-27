@@ -45,34 +45,27 @@ import qtx.entidades.Venta;
  * Java 17+
  */
 public class ManejadorMongoDB {
-	/*   Para mongo 4 y mongodb-driver-sync 3.11
-	 * 
-		private static final String CAD_CONEXION_MONGO4_2 = "mongodb://localhost:27017" ;
-		private static MongoClient poolConexionesMongo = MongoClients.create(CAD_CONEXION_MONGO4_2);
-		
-	*/
-	
 	private static final String BASE_DATOS = "ejemMongoDB";
-
 	private static final String SERVIDOR01 = "localhost";
 	private static final int puerto01 = 27017;
+	
+	private static MongoClient poolConexionesMongo = null;
 	
 	public static  MongoClient getMongoCliente_Driver_sync_5() {
 		
 		List<ServerAddress> lstServidoresMongo = List.of(new ServerAddress(SERVIDOR01, puerto01));
 		
-	    MongoClientSettings settings = MongoClientSettings.builder()
-	               .applyToClusterSettings(builder -> builder.hosts(lstServidoresMongo))
-	               .serverApi(ServerApi.builder()
-	                   .version(ServerApiVersion.V1)
-	                   .build())
-	               .build();
+	    MongoClientSettings settings = 
+	    	MongoClientSettings.builder()
+	                             .applyToClusterSettings(builder -> builder.hosts(lstServidoresMongo))
+	                             .serverApi(ServerApi.builder()
+	                                                   .version(ServerApiVersion.V1)
+	                                                   .build())
+	                             .build();
 
 	    MongoClient mongoClient = MongoClients.create(settings);
 	    return mongoClient;
-	}
-	
-	private static MongoClient poolConexionesMongo = null;
+	}	
 
 	public static void abrirPoolConexiones() {
 		ManejadorMongoDB.poolConexionesMongo = getMongoCliente_Driver_sync_5();
